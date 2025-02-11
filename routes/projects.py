@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, send_file
 from flask_login import login_required, current_user
 from bson import ObjectId
 from datetime import datetime
@@ -98,13 +98,25 @@ def create_project():
             files = request.files.getlist('attachments')
             for file in files:
                 if file and file.filename:
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join('uploads', 'projects', filename)
-                    file.save(file_path)
-                    attachments.append({
-                        'filename': filename,
-                        'path': file_path
-                    })
+                    # Check file type
+                    allowed_extensions = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'gif'}
+                    if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
+                        filename = secure_filename(file.filename)
+                        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+                        unique_filename = f"{timestamp}_{filename}"
+                        file_path = os.path.join('static', 'uploads', 'projects', unique_filename)
+                        
+                        # Ensure upload directory exists
+                        os.makedirs(os.path.join('static', 'uploads', 'projects'), exist_ok=True)
+                        
+                        # Save file
+                        file.save(file_path)
+                        attachments.append({
+                            'filename': filename,
+                            'path': file_path,
+                            'type': file.filename.rsplit('.', 1)[1].lower(),
+                            'uploaded_at': datetime.utcnow()
+                        })
 
         project_data = {
             'title': request.form.get('title'),
@@ -113,13 +125,15 @@ def create_project():
             'budget_min': float(request.form.get('budget_min')),
             'budget_max': float(request.form.get('budget_max')),
             'deadline': datetime.strptime(request.form.get('deadline'), '%Y-%m-%d'),
-            'skills_required': request.form.get('skills').split(','),
+            'skills_required': [skill.strip() for skill in request.form.get('skills').split(',') if skill.strip()],
             'client_id': ObjectId(current_user.id),
             'status': 'open',
             'created_at': datetime.utcnow(),
             'proposals': [],
             'attachments': attachments,
-            'visibility': request.form.get('visibility', 'public')
+            'visibility': request.form.get('visibility', 'public'),
+            'views': 0,
+            'last_updated': datetime.utcnow()
         }
         
         result = current_app.db.projects.insert_one(project_data)
@@ -357,7 +371,7 @@ def complete_project(project_id):
     flash('Project marked as complete!', 'success')
     return redirect(url_for('projects.view_project', project_id=project_id))
 
-@projects.route('/dashboard/client')
+@projects.route('/projects/dashboard/client')
 @login_required
 def client_dashboard():
     if current_user.account_type != 'client':
@@ -368,46 +382,47 @@ def client_dashboard():
     per_page = 10
     status = request.args.get('status', 'active')
     
-    query = {'client_id': ObjectId(current_user.id)}
-    if status == 'active':
-        query['status'] = 'in_progress'
-    elif status == 'pending':
-        query['status'] = 'open'
-    elif status == 'completed':
-        query['status'] = 'completed'
+    # Base query for client's projects
+    base_query = {'client_id': ObjectId(current_user.id)}
     
-    total = current_app.db.projects.count_documents(query)
-    projects_cursor = current_app.db.projects.find(query).sort('created_at', -1).skip((page - 1) * per_page).limit(per_page)
+    # Get active projects
+    active_projects = list(current_app.db.projects.find({
+        **base_query,
+        'status': 'in_progress'
+    }).sort('last_updated', -1))
     
-    projects = []
-    for project in projects_cursor:
-        # Add proposal count
-        project['proposal_count'] = len(project.get('proposals', []))
-        
-        # Get hired freelancer info
-        if project.get('hired_freelancer_id'):
-            freelancer = current_app.db.users.find_one({'_id': project['hired_freelancer_id']})
-            if freelancer:
-                project['hired_freelancer'] = {
-                    'name': f"{freelancer.get('first_name', '')} {freelancer.get('last_name', '')}",
-                    'avatar_url': freelancer.get('avatar_url'),
-                    'hourly_rate': freelancer.get('hourly_rate')
-                }
-        
-        # Get recent proposals
-        project['recent_proposals'] = []
-        for proposal in project.get('proposals', [])[-3:]:
-            freelancer = current_app.db.users.find_one({'_id': proposal['freelancer_id']})
-            if freelancer:
-                proposal['freelancer'] = {
-                    'name': f"{freelancer.get('first_name', '')} {freelancer.get('last_name', '')}",
-                    'avatar_url': freelancer.get('avatar_url')
-                }
-                project['recent_proposals'].append(proposal)
-        
-        projects.append(project)
+    # Get recent proposals across all projects
+    recent_proposals = []
+    project_ids = [p['_id'] for p in active_projects]
     
-    # Get active hired freelancers
+    if project_ids:
+        projects_with_proposals = current_app.db.projects.find({
+            '_id': {'$in': project_ids},
+            'proposals': {'$exists': True, '$ne': []}
+        })
+        
+        for project in projects_with_proposals:
+            for proposal in sorted(project.get('proposals', []), key=lambda x: x.get('created_at', datetime.min), reverse=True):
+                freelancer = current_app.db.users.find_one({'_id': proposal['freelancer_id']})
+                if freelancer:
+                    recent_proposals.append({
+                        'freelancer': {
+                            'id': str(freelancer['_id']),
+                            'name': f"{freelancer.get('first_name', '')} {freelancer.get('last_name', '')}",
+                            'avatar_url': freelancer.get('avatar_url')
+                        },
+                        'project': {
+                            'id': str(project['_id']),
+                            'title': project['title']
+                        },
+                        'bid_amount': proposal['bid_amount'],
+                        'status': proposal['status'],
+                        'created_at': proposal.get('created_at', datetime.utcnow())
+                    })
+                if len(recent_proposals) >= 5:  # Limit to 5 most recent proposals
+                    break
+    
+    # Get hired freelancers with real-time status
     hired_freelancers = []
     active_projects = current_app.db.projects.find({
         'client_id': ObjectId(current_user.id),
@@ -419,6 +434,20 @@ def client_dashboard():
         if project.get('hired_freelancer_id'):
             freelancer = current_app.db.users.find_one({'_id': project['hired_freelancer_id']})
             if freelancer:
+                # Get the accepted proposal for this freelancer
+                accepted_proposal = next(
+                    (p for p in project.get('proposals', []) 
+                     if p.get('freelancer_id') == project['hired_freelancer_id'] 
+                     and p.get('status') == 'accepted'),
+                    None
+                )
+                
+                # Get rating if exists
+                rating = current_app.db.reviews.find_one({
+                    'project_id': project['_id'],
+                    'freelancer_id': project['hired_freelancer_id']
+                })
+                
                 hired_freelancers.append({
                     'freelancer': {
                         'id': str(freelancer['_id']),
@@ -428,11 +457,39 @@ def client_dashboard():
                     'project': {
                         'id': str(project['_id']),
                         'title': project['title'],
-                        'rate': next((p['bid_amount'] for p in project.get('proposals', []) 
-                                    if p.get('freelancer_id') == project['hired_freelancer_id']), None),
-                        'rating': None  # You can add rating logic here if needed
+                        'rate': accepted_proposal['bid_amount'] if accepted_proposal else None,
+                        'start_date': project.get('hired_at'),
+                        'rating': rating['rating'] if rating else None
                     }
                 })
+    
+    # Get projects based on status filter
+    if status == 'active':
+        query = {**base_query, 'status': 'in_progress'}
+    elif status == 'pending':
+        query = {**base_query, 'status': 'open'}
+    elif status == 'completed':
+        query = {**base_query, 'status': 'completed'}
+    else:
+        query = base_query
+    
+    total = current_app.db.projects.count_documents(query)
+    projects = list(current_app.db.projects.find(query)
+                   .sort('last_updated', -1)
+                   .skip((page - 1) * per_page)
+                   .limit(per_page))
+    
+    # Enhance projects with additional data
+    for project in projects:
+        project['proposal_count'] = len(project.get('proposals', []))
+        if project.get('hired_freelancer_id'):
+            freelancer = current_app.db.users.find_one({'_id': project['hired_freelancer_id']})
+            if freelancer:
+                project['hired_freelancer'] = {
+                    'name': f"{freelancer.get('first_name', '')} {freelancer.get('last_name', '')}",
+                    'avatar_url': freelancer.get('avatar_url'),
+                    'hourly_rate': freelancer.get('hourly_rate')
+                }
     
     pagination = {
         'page': page,
@@ -442,33 +499,44 @@ def client_dashboard():
     }
     
     return render_template('dashboard/client_dashboard.html',
+                         active_projects=active_projects,
                          projects=projects,
+                         recent_proposals=recent_proposals,
                          hired_freelancers=hired_freelancers,
                          pagination=pagination,
                          status=status)
 
-@projects.route('/dashboard/freelancer')
+@projects.route('/projects/dashboard/freelancer')
 @login_required
 def freelancer_dashboard():
     if current_user.account_type != 'freelancer':
         flash('Access denied. This page is for freelancers only.', 'error')
         return redirect(url_for('main.dashboard'))
     
-    # Get freelancer's proposals with pagination
     page = request.args.get('page', 1, type=int)
     per_page = 10
     
-    # Query for projects where the freelancer has submitted proposals
-    query = {
-        'proposals.freelancer_id': ObjectId(current_user.id)
+    # Get active projects (where freelancer is hired)
+    active_projects = list(current_app.db.projects.find({
+        'hired_freelancer_id': ObjectId(current_user.id),
+        'status': 'in_progress'
+    }).sort('last_updated', -1))
+    
+    # Get all proposals by the freelancer
+    proposals_query = {
+        'proposals': {
+            '$elemMatch': {
+                'freelancer_id': ObjectId(current_user.id)
+            }
+        }
     }
     
-    total = current_app.db.projects.count_documents(query)
+    total = current_app.db.projects.count_documents(proposals_query)
     
     # Get projects with proposal details
-    projects_cursor = current_app.db.projects.find(query).sort('created_at', -1).skip((page - 1) * per_page).limit(per_page)
+    projects_cursor = current_app.db.projects.find(proposals_query).sort('last_updated', -1).skip((page - 1) * per_page).limit(per_page)
     
-    # Enhance project data with client information
+    # Enhance project data with client information and real-time status
     projects = []
     for project in projects_cursor:
         # Get client info
@@ -476,14 +544,30 @@ def freelancer_dashboard():
         if client:
             project['client'] = {
                 'name': f"{client.get('first_name', '')} {client.get('last_name', '')}",
-                'avatar_url': client.get('avatar_url')
+                'avatar_url': client.get('avatar_url'),
+                'total_projects': current_app.db.projects.count_documents({'client_id': client['_id']}),
+                'completed_projects': current_app.db.projects.count_documents({
+                    'client_id': client['_id'],
+                    'status': 'completed'
+                })
             }
         
-        # Get freelancer's specific proposal
+        # Get freelancer's specific proposal with real-time status
         for proposal in project.get('proposals', []):
             if str(proposal.get('freelancer_id')) == current_user.id:
                 project['user_proposal'] = proposal
+                # Add milestone progress if proposal is accepted
+                if proposal.get('status') == 'accepted':
+                    milestones = current_app.db.milestones.find({
+                        'project_id': project['_id'],
+                        'freelancer_id': ObjectId(current_user.id)
+                    }).sort('created_at', 1)
+                    proposal['milestones'] = list(milestones)
                 break
+        
+        # Add file access information for accepted proposals
+        if project.get('user_proposal', {}).get('status') == 'accepted':
+            project['attachments'] = project.get('attachments', [])
         
         projects.append(project)
     
@@ -495,5 +579,48 @@ def freelancer_dashboard():
     }
     
     return render_template('dashboard/freelancer_dashboard.html',
+                         active_projects=active_projects,
                          projects=projects,
-                         pagination=pagination) 
+                         pagination=pagination)
+
+@projects.route('/projects/<project_id>/download/<path:filename>')
+@login_required
+def download_file(project_id, filename):
+    # Get project
+    project = current_app.db.projects.find_one({'_id': ObjectId(project_id)})
+    if not project:
+        flash('Project not found.', 'error')
+        return redirect(url_for('projects.list_projects'))
+    
+    # Check if user has access
+    has_access = False
+    if str(project['client_id']) == current_user.id:
+        has_access = True
+    elif current_user.is_freelancer:
+        # Check if freelancer has an accepted proposal
+        for proposal in project.get('proposals', []):
+            if (str(proposal.get('freelancer_id')) == current_user.id and 
+                proposal.get('status') == 'accepted'):
+                has_access = True
+                break
+    
+    if not has_access:
+        flash('You do not have permission to access this file.', 'error')
+        return redirect(url_for('projects.view_project', project_id=project_id))
+    
+    # Find the file in attachments
+    attachment = next((a for a in project.get('attachments', []) 
+                      if os.path.basename(a['path']) == filename), None)
+    if not attachment:
+        flash('File not found.', 'error')
+        return redirect(url_for('projects.view_project', project_id=project_id))
+    
+    try:
+        return send_file(
+            attachment['path'],
+            as_attachment=True,
+            download_name=attachment['filename']
+        )
+    except Exception as e:
+        flash('Error downloading file.', 'error')
+        return redirect(url_for('projects.view_project', project_id=project_id)) 
