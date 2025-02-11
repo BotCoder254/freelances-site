@@ -17,14 +17,30 @@ class User(UserMixin):
         self.avatar_url = user_data.get('avatar_url')
         self.created_at = user_data.get('created_at')
         self.is_verified = user_data.get('is_verified', False)
-        self.skills = user_data.get('skills', [])
         self.bio = user_data.get('bio', '')
-        self.hourly_rate = user_data.get('hourly_rate')
-        self.portfolio_items = user_data.get('portfolio_items', [])
         self.social_links = user_data.get('social_links', {})
         self.last_login = user_data.get('last_login')
         self.login_count = user_data.get('login_count', 0)
         self.status = user_data.get('status', 'active')
+        
+        # Freelancer specific fields
+        if self.account_type == self.ROLE_FREELANCER:
+            self.skills = user_data.get('skills', [])
+            self.hourly_rate = user_data.get('hourly_rate')
+            self.portfolio_items = user_data.get('portfolio_items', [])
+            self.completed_projects = user_data.get('completed_projects', 0)
+            self.total_earnings = user_data.get('total_earnings', 0)
+            self.rating = user_data.get('rating', 0)
+            self.reviews_count = user_data.get('reviews_count', 0)
+        
+        # Client specific fields
+        else:
+            self.company_name = user_data.get('company_name', '')
+            self.industry = user_data.get('industry', '')
+            self.company_size = user_data.get('company_size', '')
+            self.projects_count = user_data.get('projects_count', 0)
+            self.total_spent = user_data.get('total_spent', 0)
+            self.hire_rate = user_data.get('hire_rate', 0)
 
     @property
     def is_active(self):
@@ -60,15 +76,33 @@ class User(UserMixin):
             'created_at': datetime.datetime.utcnow(),
             'is_verified': False,
             'avatar_url': None,
-            'skills': [],
             'bio': '',
-            'hourly_rate': None,
-            'portfolio_items': [],
             'social_links': {},
             'last_login': None,
             'login_count': 0,
             'status': 'active'
         }
+
+        # Add role-specific fields
+        if account_type == User.ROLE_FREELANCER:
+            user_data.update({
+                'skills': [],
+                'hourly_rate': None,
+                'portfolio_items': [],
+                'completed_projects': 0,
+                'total_earnings': 0,
+                'rating': 0,
+                'reviews_count': 0
+            })
+        else:
+            user_data.update({
+                'company_name': '',
+                'industry': '',
+                'company_size': '',
+                'projects_count': 0,
+                'total_spent': 0,
+                'hire_rate': 0
+            })
 
         result = current_app.db.users.insert_one(user_data)
         user_data['_id'] = result.inserted_id
@@ -163,6 +197,22 @@ class User(UserMixin):
             return False
         proposals = project.get('proposals', [])
         return any(str(proposal.get('freelancer_id', '')) == self.id for proposal in proposals)
+
+    def update_stats(self, stats_data):
+        """Update user statistics based on role"""
+        if self.is_freelancer:
+            valid_fields = ['completed_projects', 'total_earnings', 'rating', 'reviews_count']
+        else:
+            valid_fields = ['projects_count', 'total_spent', 'hire_rate']
+        
+        update_data = {k: v for k, v in stats_data.items() if k in valid_fields}
+        if update_data:
+            current_app.db.users.update_one(
+                {'_id': ObjectId(self.id)},
+                {'$set': update_data}
+            )
+            for key, value in update_data.items():
+                setattr(self, key, value)
 
     @staticmethod
     def search_freelancers(query=None, skills=None, page=1, per_page=10):

@@ -12,6 +12,13 @@
                     <div class="w-32 h-32 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
                         <img src="{{ user.avatar_url or 'https://api.dicebear.com/7.x/initials/svg?seed=' + user.get_full_name() }}" alt="Profile" />
                     </div>
+                    {% if current_user.id == user.id %}
+                    <label for="avatar-upload" class="btn btn-circle btn-sm absolute bottom-0 right-0 bg-primary text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                    </label>
+                    {% endif %}
                 </div>
                 <div class="flex-1 text-center md:text-left">
                     <h1 class="text-3xl font-bold">{{ user.get_full_name() }}</h1>
@@ -21,17 +28,24 @@
                         <p class="font-semibold">Hourly Rate:</p>
                         <p>${{ user.hourly_rate or 'Not set' }}/hr</p>
                     </div>
+                    {% else %}
+                    <div class="mt-4">
+                        <p class="font-semibold">Projects Posted:</p>
+                        <p>{{ user.projects_count or 0 }}</p>
+                        <p class="font-semibold mt-2">Hire Rate:</p>
+                        <p>{{ user.hire_rate or 0 }}%</p>
+                    </div>
                     {% endif %}
                 </div>
                 {% if current_user.id == user.id %}
-                <a href="{{ url_for('freelancers.edit_profile' if user.is_freelancer else 'clients.edit_profile') }}" class="btn btn-primary">Edit Profile</a>
+                <a href="{{ url_for('main.edit_profile') }}" class="btn btn-primary">Edit Profile</a>
                 {% endif %}
             </div>
 
             <!-- Bio Section -->
             <div class="divider"></div>
             <div class="prose max-w-none">
-                <h2 class="text-xl font-bold mb-4">About Me</h2>
+                <h2 class="text-xl font-bold mb-4">About {% if user.is_freelancer %}Me{% else %}{{ user.first_name }}{% endif %}</h2>
                 <p>{{ user.bio or 'No bio provided yet.' }}</p>
             </div>
 
@@ -82,19 +96,24 @@
             {% endif %}
 
             <!-- Social Links -->
+            {% if user.social_links %}
             <div class="divider"></div>
             <div>
-                <h2 class="text-xl font-bold mb-4">Social Links</h2>
+                <h2 class="text-xl font-bold mb-4">Connect</h2>
                 <div class="flex flex-wrap gap-4">
                     {% if user.social_links.get('github') %}
                     <a href="{{ user.social_links.github }}" target="_blank" class="btn btn-outline gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
                         GitHub
                     </a>
                     {% endif %}
                     {% if user.social_links.get('linkedin') %}
                     <a href="{{ user.social_links.linkedin }}" target="_blank" class="btn btn-outline gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24">
+                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        </svg>
                         LinkedIn
                     </a>
                     {% endif %}
@@ -108,7 +127,51 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
+
+            <!-- Contact Button -->
+            {% if current_user.is_freelancer and not current_user.id == user.id %}
+            <div class="divider"></div>
+            <div class="flex justify-center">
+                <a href="{{ url_for('messages.create', recipient_id=user.id) }}" class="btn btn-primary">
+                    Contact {{ user.first_name }}
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Hidden file input for avatar upload -->
+{% if current_user.id == user.id %}
+<input type="file" id="avatar-upload" class="hidden" accept="image/*">
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('avatar-upload')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+        const response = await fetch('{{ url_for("main.update_avatar") }}', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Failed to update profile picture. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while updating profile picture.');
+    }
+});
+</script>
 {% endblock %} 
