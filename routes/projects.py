@@ -380,15 +380,14 @@ def client_dashboard():
     
     page = request.args.get('page', 1, type=int)
     per_page = 10
-    status = request.args.get('status', 'active')
     
-    # Base query for client's projects
+    # Get all client's projects (both active and pending)
     base_query = {'client_id': ObjectId(current_user.id)}
     
-    # Get active projects
+    # Get active and pending projects
     active_projects = list(current_app.db.projects.find({
         **base_query,
-        'status': 'in_progress'
+        'status': {'$in': ['open', 'in_progress']}
     }).sort('last_updated', -1))
     
     # Get recent proposals across all projects
@@ -397,12 +396,11 @@ def client_dashboard():
     
     if project_ids:
         projects_with_proposals = current_app.db.projects.find({
-            '_id': {'$in': project_ids},
-            'proposals': {'$exists': True, '$ne': []}
+            '_id': {'$in': project_ids}
         })
         
         for project in projects_with_proposals:
-            for proposal in sorted(project.get('proposals', []), key=lambda x: x.get('created_at', datetime.min), reverse=True):
+            for proposal in project.get('proposals', []):
                 freelancer = current_app.db.users.find_one({'_id': proposal['freelancer_id']})
                 if freelancer:
                     recent_proposals.append({
@@ -417,10 +415,13 @@ def client_dashboard():
                         },
                         'bid_amount': proposal['bid_amount'],
                         'status': proposal['status'],
+                        'cover_letter': proposal.get('cover_letter', ''),
                         'created_at': proposal.get('created_at', datetime.utcnow())
                     })
-                if len(recent_proposals) >= 5:  # Limit to 5 most recent proposals
-                    break
+    
+    # Sort proposals by date and get the 5 most recent
+    recent_proposals.sort(key=lambda x: x['created_at'], reverse=True)
+    recent_proposals = recent_proposals[:5]
     
     # Get hired freelancers with real-time status
     hired_freelancers = []
@@ -437,74 +438,42 @@ def client_dashboard():
                 # Get the accepted proposal for this freelancer
                 accepted_proposal = next(
                     (p for p in project.get('proposals', []) 
-                     if p.get('freelancer_id') == project['hired_freelancer_id'] 
+                     if str(p.get('freelancer_id')) == str(project['hired_freelancer_id']) 
                      and p.get('status') == 'accepted'),
                     None
                 )
                 
-                # Get rating if exists
-                rating = current_app.db.reviews.find_one({
-                    'project_id': project['_id'],
-                    'freelancer_id': project['hired_freelancer_id']
-                })
-                
-                hired_freelancers.append({
-                    'freelancer': {
-                        'id': str(freelancer['_id']),
-                        'name': f"{freelancer.get('first_name', '')} {freelancer.get('last_name', '')}",
-                        'avatar_url': freelancer.get('avatar_url')
-                    },
-                    'project': {
-                        'id': str(project['_id']),
-                        'title': project['title'],
-                        'rate': accepted_proposal['bid_amount'] if accepted_proposal else None,
-                        'start_date': project.get('hired_at'),
-                        'rating': rating['rating'] if rating else None
-                    }
-                })
-    
-    # Get projects based on status filter
-    if status == 'active':
-        query = {**base_query, 'status': 'in_progress'}
-    elif status == 'pending':
-        query = {**base_query, 'status': 'open'}
-    elif status == 'completed':
-        query = {**base_query, 'status': 'completed'}
-    else:
-        query = base_query
-    
-    total = current_app.db.projects.count_documents(query)
-    projects = list(current_app.db.projects.find(query)
-                   .sort('last_updated', -1)
-                   .skip((page - 1) * per_page)
-                   .limit(per_page))
+                if accepted_proposal:
+                    hired_freelancers.append({
+                        'freelancer': {
+                            'id': str(freelancer['_id']),
+                            'name': f"{freelancer.get('first_name', '')} {freelancer.get('last_name', '')}",
+                            'avatar_url': freelancer.get('avatar_url')
+                        },
+                        'project': {
+                            'id': str(project['_id']),
+                            'title': project['title']
+                        },
+                        'rate': accepted_proposal['bid_amount'],
+                        'rating': freelancer.get('rating', 0)
+                    })
     
     # Enhance projects with additional data
-    for project in projects:
-        project['proposal_count'] = len(project.get('proposals', []))
+    for project in active_projects:
+        project['proposals'] = project.get('proposals', [])
+        project['proposal_count'] = len(project['proposals'])
         if project.get('hired_freelancer_id'):
             freelancer = current_app.db.users.find_one({'_id': project['hired_freelancer_id']})
             if freelancer:
                 project['hired_freelancer'] = {
                     'name': f"{freelancer.get('first_name', '')} {freelancer.get('last_name', '')}",
-                    'avatar_url': freelancer.get('avatar_url'),
-                    'hourly_rate': freelancer.get('hourly_rate')
+                    'avatar_url': freelancer.get('avatar_url')
                 }
-    
-    pagination = {
-        'page': page,
-        'per_page': per_page,
-        'total': total,
-        'pages': (total + per_page - 1) // per_page
-    }
     
     return render_template('dashboard/client_dashboard.html',
                          active_projects=active_projects,
-                         projects=projects,
                          recent_proposals=recent_proposals,
-                         hired_freelancers=hired_freelancers,
-                         pagination=pagination,
-                         status=status)
+                         hired_freelancers=hired_freelancers)
 
 @projects.route('/projects/dashboard/freelancer')
 @login_required
