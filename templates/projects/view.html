@@ -1,0 +1,194 @@
+{% extends "layouts/base_authenticated.html" %}
+
+{% block title %}{{ project.title }} - FreelanceHub{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <!-- Project Header -->
+    <div class="flex justify-between items-start mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">{{ project.title }}</h1>
+            <div class="flex items-center gap-4 mt-2">
+                <span class="badge badge-primary">{{ project.category }}</span>
+                <span class="text-gray-600">Posted {{ project.created_at|timeago }}</span>
+            </div>
+        </div>
+        {% if current_user.id == project.client_id %}
+        <div class="dropdown dropdown-end">
+            <label tabindex="0" class="btn btn-ghost btn-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+            </label>
+            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+                <li><a href="{{ url_for('projects.edit_project', project_id=project['_id']) }}">Edit Project</a></li>
+                <li>
+                    <form action="{{ url_for('projects.delete_project', project_id=project['_id']) }}" method="POST" class="w-full">
+                        <button type="submit" class="w-full text-left text-error">Delete Project</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Project Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Description -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">Project Description</h2>
+                    <p class="whitespace-pre-wrap">{{ project.description }}</p>
+                </div>
+            </div>
+
+            <!-- Required Skills -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">Required Skills</h2>
+                    <div class="flex flex-wrap gap-2">
+                        {% for skill in project.skills %}
+                        <span class="badge badge-secondary">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attachments -->
+            {% if project.attachments %}
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">Attachments</h2>
+                    <ul class="space-y-2">
+                        {% for attachment in project.attachments %}
+                        <li>
+                            <a href="{{ url_for('projects.download_attachment', project_id=project['_id'], attachment_id=attachment.id) }}" 
+                               class="link link-primary flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                {{ attachment.filename }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Project Stats -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="stat">
+                        <div class="stat-title">Budget Range</div>
+                        <div class="stat-value">${{ project.budget_min }} - ${{ project.budget_max }}</div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="stat">
+                        <div class="stat-title">Deadline</div>
+                        <div class="stat-value text-lg">{{ project.deadline|date }}</div>
+                        <div class="stat-desc">{{ project.deadline|timeago }}</div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="stat">
+                        <div class="stat-title">Proposals</div>
+                        <div class="stat-value">{{ project.proposals|length }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Info -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h2 class="card-title">About the Client</h2>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="avatar">
+                            <div class="w-12 rounded-full">
+                                <img src="{{ project.client.avatar_url or url_for('static', filename='images/default-avatar.png') }}" alt="{{ project.client.name }}">
+                            </div>
+                        </div>
+                        <div>
+                            <div class="font-semibold">{{ project.client.name }}</div>
+                            <div class="text-sm text-gray-600">Member since {{ project.client.created_at|date }}</div>
+                        </div>
+                    </div>
+                    <div class="stats stats-vertical shadow">
+                        <div class="stat">
+                            <div class="stat-title">Projects Posted</div>
+                            <div class="stat-value">{{ project.client.projects|length }}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-title">Hire Rate</div>
+                            <div class="stat-value">{{ (project.client.hire_rate * 100)|round|int }}%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            {% if current_user.is_freelancer and not current_user.has_proposal(project) %}
+            <a href="{{ url_for('projects.submit_proposal', project_id=project['_id']) }}" class="btn btn-primary w-full">
+                Submit Proposal
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Proposals Section (visible only to the client) -->
+    {% if current_user.id == project.client_id and project.proposals %}
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold mb-6">Proposals ({{ project.proposals|length }})</h2>
+        <div class="space-y-6">
+            {% for proposal in project.proposals %}
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="avatar">
+                                <div class="w-12 rounded-full">
+                                    <img src="{{ proposal.freelancer.avatar_url or url_for('static', filename='images/default-avatar.png') }}" 
+                                         alt="{{ proposal.freelancer.name }}">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="font-semibold">{{ proposal.freelancer.name }}</div>
+                                <div class="text-sm text-gray-600">Submitted {{ proposal.created_at|timeago }}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold">${{ proposal.bid_amount }}</div>
+                            <div class="text-sm text-gray-600">{{ proposal.delivery_time }} days delivery</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <p class="whitespace-pre-wrap">{{ proposal.cover_letter }}</p>
+                    </div>
+
+                    {% if not project.hired_freelancer %}
+                    <div class="card-actions justify-end mt-4">
+                        <form action="{{ url_for('projects.hire_freelancer', project_id=project['_id'], proposal_id=proposal.id) }}" 
+                              method="POST">
+                            <button type="submit" class="btn btn-primary">Hire {{ proposal.freelancer.name }}</button>
+                        </form>
+                    </div>
+                    {% elif project.hired_freelancer.id == proposal.freelancer.id %}
+                    <div class="alert alert-success mt-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Hired for this project</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

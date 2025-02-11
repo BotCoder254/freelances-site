@@ -1,0 +1,124 @@
+{% extends "layouts/base_authenticated.html" %}
+
+{% block title %}Post a Project - FreelanceHub{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold">Post a Project</h1>
+        <p class="text-gray-600">Find the perfect freelancer for your project</p>
+    </div>
+
+    <form method="POST" class="space-y-6">
+        <!-- Basic Information -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Basic Information</h2>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Project Title</span>
+                        <span class="label-text-alt text-error">*</span>
+                    </label>
+                    <input type="text" name="title" class="input input-bordered" required>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Category</span>
+                        <span class="label-text-alt text-error">*</span>
+                    </label>
+                    <select name="category" class="select select-bordered" required>
+                        <option value="">Select a category</option>
+                        <option value="Web Development">Web Development</option>
+                        <option value="Mobile Development">Mobile Development</option>
+                        <option value="UI/UX Design">UI/UX Design</option>
+                        <option value="Writing">Writing</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Data Science">Data Science</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Project Description</span>
+                        <span class="label-text-alt text-error">*</span>
+                    </label>
+                    <textarea name="description" class="textarea textarea-bordered h-32" required></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget and Timeline -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Budget and Timeline</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Minimum Budget ($)</span>
+                            <span class="label-text-alt text-error">*</span>
+                        </label>
+                        <input type="number" name="budget_min" class="input input-bordered" min="0" step="0.01" required>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Maximum Budget ($)</span>
+                            <span class="label-text-alt text-error">*</span>
+                        </label>
+                        <input type="number" name="budget_max" class="input input-bordered" min="0" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Project Deadline</span>
+                        <span class="label-text-alt text-error">*</span>
+                    </label>
+                    <input type="date" name="deadline" class="input input-bordered" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills and Requirements -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Skills and Requirements</h2>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Required Skills (comma-separated)</span>
+                        <span class="label-text-alt text-error">*</span>
+                    </label>
+                    <input type="text" name="skills" class="input input-bordered" placeholder="e.g., Python, JavaScript, React" required>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Attachments</span>
+                    </label>
+                    <input type="file" name="attachments" class="file-input file-input-bordered" multiple>
+                    <label class="label">
+                        <span class="label-text-alt">Upload any relevant files (max 5 files, 10MB each)</span>
+                    </label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-4">
+                        <input type="checkbox" name="visibility" value="private" class="checkbox checkbox-primary">
+                        <span class="label-text">Make this project private (only invited freelancers can view and submit proposals)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4">
+            <a href="{{ url_for('projects.list_projects') }}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">Post Project</button>
+        </div>
+    </form>
+</div>
+{% endblock %} 

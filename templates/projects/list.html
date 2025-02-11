@@ -1,0 +1,190 @@
+{% extends "layouts/base_authenticated.html" %}
+
+{% block title %}Browse Projects - FreelanceHub{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">Browse Projects</h1>
+            <p class="text-gray-600">Find your next opportunity</p>
+        </div>
+        {% if current_user.is_client %}
+        <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Post a Project
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <form method="GET" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Search -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Search</span>
+                        </label>
+                        <input type="text" name="q" value="{{ request.args.get('q', '') }}" 
+                               class="input input-bordered" placeholder="Search projects...">
+                    </div>
+
+                    <!-- Category -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Category</span>
+                        </label>
+                        <select name="category" class="select select-bordered">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category }}" 
+                                    {% if request.args.get('category') == category %}selected{% endif %}>
+                                {{ category }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Budget Range -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Budget Range</span>
+                        </label>
+                        <select name="budget" class="select select-bordered">
+                            <option value="">Any Budget</option>
+                            <option value="0-100" {% if request.args.get('budget') == '0-100' %}selected{% endif %}>
+                                Under $100
+                            </option>
+                            <option value="100-500" {% if request.args.get('budget') == '100-500' %}selected{% endif %}>
+                                $100 - $500
+                            </option>
+                            <option value="500-1000" {% if request.args.get('budget') == '500-1000' %}selected{% endif %}>
+                                $500 - $1,000
+                            </option>
+                            <option value="1000-5000" {% if request.args.get('budget') == '1000-5000' %}selected{% endif %}>
+                                $1,000 - $5,000
+                            </option>
+                            <option value="5000+" {% if request.args.get('budget') == '5000+' %}selected{% endif %}>
+                                $5,000+
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-4">
+                    <a href="{{ url_for('projects.list_projects') }}" class="btn btn-ghost">Reset</a>
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Projects -->
+    {% if projects %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {% for project in projects %}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <h2 class="card-title">{{ project['title'] }}</h2>
+                    <span class="badge badge-primary">{{ project['category'] }}</span>
+                </div>
+                
+                <p class="text-gray-600 line-clamp-3">{{ project['description'] }}</p>
+                
+                <div class="flex flex-wrap gap-2 my-4">
+                    {% for skill in project['skills_required'][:3] %}
+                    <span class="badge badge-secondary badge-sm">{{ skill }}</span>
+                    {% endfor %}
+                    {% if project['skills_required']|length > 3 %}
+                    <span class="badge badge-ghost badge-sm">+{{ project['skills_required']|length - 3 }} more</span>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="avatar">
+                        <div class="w-8 rounded-full">
+                            <img src="{{ project['client']['avatar_url'] or url_for('static', filename='images/default-avatar.png') }}" 
+                                 alt="{{ project['client']['name'] }}">
+                        </div>
+                    </div>
+                    <div class="text-sm">
+                        <div class="font-semibold">{{ project['client']['name'] }}</div>
+                        <div class="text-gray-600">{{ project['client']['hire_rate'] * 100 }}% hire rate</div>
+                    </div>
+                </div>
+
+                <div class="divider my-2"></div>
+
+                <div class="flex items-center justify-between text-sm text-gray-600">
+                    <div>${{ project['budget_min'] }} - ${{ project['budget_max'] }}</div>
+                    <div>{{ project['proposals']|length if project.get('proposals') else 0 }} proposals</div>
+                    <div>{{ project['created_at']|timeago }}</div>
+                </div>
+
+                <div class="card-actions justify-end mt-4">
+                    <a href="{{ url_for('projects.view_project', project_id=project['_id']) }}" 
+                       class="btn btn-primary btn-block">View Project</a>
+                    {% if current_user.is_freelancer and not current_user.has_proposal(project) %}
+                    <a href="{{ url_for('projects.submit_proposal', project_id=project['_id']) }}" class="btn btn-primary">
+                        Submit Proposal
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="flex justify-center mb-8">
+        <div class="join">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('projects.list_projects', page=pagination.prev_num, **request.args) }}" 
+               class="join-item btn">Previous</a>
+            {% endif %}
+            
+            {% for page in pagination.iter_pages() %}
+                {% if page %}
+                    {% if page != pagination.page %}
+                    <a href="{{ url_for('projects.list_projects', page=page, **request.args) }}" 
+                       class="join-item btn">{{ page }}</a>
+                    {% else %}
+                    <button class="join-item btn btn-active" disabled>{{ page }}</button>
+                    {% endif %}
+                {% else %}
+                    <button class="join-item btn btn-disabled">...</button>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('projects.list_projects', page=pagination.next_num, **request.args) }}" 
+               class="join-item btn">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body text-center py-16">
+            <h2 class="card-title text-2xl justify-center">No Projects Found</h2>
+            <p class="text-gray-600">Try adjusting your search filters or check back later.</p>
+            {% if current_user.is_client %}
+            <div class="card-actions justify-center mt-4">
+                <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">
+                    Post a Project
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

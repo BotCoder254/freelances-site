@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Client Dashboard - FreelanceHub{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Welcome Section -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold mb-2">Welcome, {{ current_user.first_name }}!</h1>
+        <p class="text-gray-600">Manage your projects and find top talent</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <a href="{{ url_for('projects.create_project') }}" class="card bg-primary text-primary-content hover:bg-primary-focus transition-colors">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title">Post a Project</h2>
+                <p>Create a new project and find the perfect freelancer</p>
+            </div>
+        </a>
+        <a href="{{ url_for('freelancers.list_freelancers') }}" class="card bg-secondary text-secondary-content hover:bg-secondary-focus transition-colors">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title">Browse Freelancers</h2>
+                <p>Explore our talented freelancer community</p>
+            </div>
+        </a>
+        <a href="{{ url_for('main.edit_profile') }}" class="card bg-accent text-accent-content hover:bg-accent-focus transition-colors">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title">Edit Profile</h2>
+                <p>Update your profile and preferences</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- Active Projects -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Active Projects</h2>
+            <a href="{{ url_for('projects.list_projects') }}" class="btn btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for project in active_projects %}
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h3 class="card-title">{{ project.title }}</h3>
+                    <p class="text-sm text-gray-600 mb-2">Posted {{ project.created_at.strftime('%B %d, %Y') }}</p>
+                    <p class="mb-4">{{ project.description[:150] }}...</p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% for skill in project.skills_required %}
+                        <span class="badge badge-primary">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="card-actions justify-between items-center">
+                        <div class="text-sm">
+                            <span class="font-bold">{{ project.proposals|length }}</span> proposals
+                        </div>
+                        <a href="{{ url_for('projects.view_project', project_id=project._id) }}" class="btn btn-primary btn-sm">View Project</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-span-2">
+                <div class="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>You don't have any active projects. <a href="{{ url_for('projects.create_project') }}" class="link">Post a project</a> to get started!</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Recent Proposals -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h3 class="text-xl font-bold mb-4">Recent Proposals</h3>
+                {% for proposal in recent_proposals %}
+                <div class="flex items-start gap-4 py-4 border-b last:border-0">
+                    <div class="avatar">
+                        <div class="w-12 h-12 rounded-full">
+                            <img src="{{ proposal.freelancer.avatar_url or url_for('static', filename='images/default-avatar.png') }}" alt="Freelancer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-semibold">{{ proposal.freelancer.get_full_name() }}</h4>
+                                <p class="text-sm text-gray-600">for {{ proposal.project.title }}</p>
+                            </div>
+                            <span class="badge badge-{{ 'success' if proposal.status == 'accepted' else 'warning' }}">
+                                {{ proposal.status }}
+                            </span>
+                        </div>
+                        <p class="mt-2 text-sm">{{ proposal.cover_letter[:100] }}...</p>
+                        <div class="mt-2 flex justify-between items-center">
+                            <span class="text-sm font-semibold">${{ proposal.bid_amount }}</span>
+                            <a href="{{ url_for('projects.view_project', project_id=proposal.project._id) }}" class="btn btn-ghost btn-xs">View Details</a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-gray-600">
+                    No proposals received yet
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Hired Freelancers -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h3 class="text-xl font-bold mb-4">Hired Freelancers</h3>
+                {% for hire in hired_freelancers %}
+                <div class="flex items-center gap-4 py-4 border-b last:border-0">
+                    <div class="avatar">
+                        <div class="w-12 h-12 rounded-full">
+                            <img src="{{ hire.freelancer.avatar_url or url_for('static', filename='images/default-avatar.png') }}" alt="Freelancer">
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-semibold">{{ hire.freelancer.get_full_name() }}</h4>
+                                <p class="text-sm text-gray-600">{{ hire.project.title }}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="badge badge-success mb-1">Active</div>
+                                <p class="text-sm font-semibold">${{ hire.rate }}/hr</p>
+                            </div>
+                        </div>
+                        <div class="mt-2 flex justify-between items-center">
+                            <div class="rating rating-sm">
+                                {% for _ in range(hire.rating) %}
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked disabled />
+                                {% endfor %}
+                            </div>
+                            <a href="{{ url_for('freelancers.view_freelancer', freelancer_id=hire.freelancer.id) }}" class="btn btn-ghost btn-xs">View Profile</a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-gray-600">
+                    No hired freelancers yet
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

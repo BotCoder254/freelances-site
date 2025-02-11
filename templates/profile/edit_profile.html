@@ -1,0 +1,70 @@
+{% extends "layouts/base_authenticated.html" %}
+
+{% block title %}Edit Profile - FreelanceHub{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-8">
+    <h1 class="text-3xl font-bold mb-8">Edit Profile</h1>
+
+    <form method="POST" class="space-y-6">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Basic Information</h2>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Bio</span>
+                    </label>
+                    <textarea name="bio" class="textarea textarea-bordered h-24" placeholder="Tell clients about yourself">{{ current_user.bio }}</textarea>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Hourly Rate ($)</span>
+                    </label>
+                    <input type="number" name="hourly_rate" class="input input-bordered" value="{{ current_user.hourly_rate or '' }}" min="0" step="0.01">
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Skills (comma-separated)</span>
+                    </label>
+                    <input type="text" name="skills" class="input input-bordered" value="{{ current_user.skills|join(', ') }}" placeholder="e.g., Python, JavaScript, UI Design">
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Social Links</h2>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">GitHub Profile</span>
+                    </label>
+                    <input type="url" name="github" class="input input-bordered" value="{{ current_user.social_links.github or '' }}" placeholder="https://github.com/username">
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">LinkedIn Profile</span>
+                    </label>
+                    <input type="url" name="linkedin" class="input input-bordered" value="{{ current_user.social_links.linkedin or '' }}" placeholder="https://linkedin.com/in/username">
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Personal Website</span>
+                    </label>
+                    <input type="url" name="website" class="input input-bordered" value="{{ current_user.social_links.website or '' }}" placeholder="https://yourwebsite.com">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4">
+            <a href="{{ url_for('freelancers.dashboard') }}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %} 

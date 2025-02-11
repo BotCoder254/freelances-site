@@ -1,0 +1,122 @@
+{% extends "layouts/base_authenticated.html" %}
+
+{% block title %}Submit Proposal - {{ project.title }} - FreelanceHub{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Project Summary -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-2xl">{{ project.title }}</h2>
+            <div class="flex items-center gap-4">
+                <span class="badge badge-primary">{{ project.category }}</span>
+                <span class="text-gray-600">Budget: ${{ project.budget_min }} - ${{ project.budget_max }}</span>
+                <span class="text-gray-600">Deadline: {{ project.deadline|date }}</span>
+            </div>
+            <p class="mt-4">{{ project.description|truncate(200) }}</p>
+            <div class="card-actions justify-end">
+                <a href="{{ url_for('projects.view_project', project_id=project['_id']) }}" class="link link-primary">
+                    View Full Project
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proposal Form -->
+    <form method="POST" class="space-y-6">
+        <!-- Bid Details -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Bid Details</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Bid Amount ($)</span>
+                            <span class="label-text-alt text-error">*</span>
+                        </label>
+                        <input type="number" name="bid_amount" class="input input-bordered" 
+                               min="{{ project.budget_min }}" max="{{ project.budget_max }}" 
+                               step="0.01" required>
+                        <label class="label">
+                            <span class="label-text-alt">Must be between ${{ project.budget_min }} and ${{ project.budget_max }}</span>
+                        </label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Delivery Time (days)</span>
+                            <span class="label-text-alt text-error">*</span>
+                        </label>
+                        <input type="number" name="delivery_time" class="input input-bordered" 
+                               min="1" max="365" required>
+                        <label class="label">
+                            <span class="label-text-alt">Estimated time to complete the project</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cover Letter -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Cover Letter</h2>
+                <p class="text-gray-600 mb-4">
+                    Explain why you're the best fit for this project. Highlight your relevant experience and approach.
+                </p>
+                
+                <div class="form-control">
+                    <textarea name="cover_letter" class="textarea textarea-bordered h-48" 
+                              placeholder="Write your proposal..." required></textarea>
+                    <label class="label">
+                        <span class="label-text-alt">Minimum 100 characters</span>
+                        <span class="label-text-alt">Maximum 5000 characters</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attachments -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Portfolio Samples</h2>
+                <p class="text-gray-600 mb-4">
+                    Optional: Attach relevant work samples or portfolio items that demonstrate your expertise.
+                </p>
+                
+                <div class="form-control">
+                    <input type="file" name="attachments" class="file-input file-input-bordered" multiple>
+                    <label class="label">
+                        <span class="label-text-alt">Upload up to 3 files (max 5MB each)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-4">
+                        <input type="checkbox" name="terms_accepted" class="checkbox checkbox-primary" required>
+                        <span class="label-text">
+                            I understand that my proposal is binding and I commit to delivering the project as specified 
+                            if my bid is accepted.
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4">
+            <a href="{{ url_for('projects.view_project', project_id=project['_id']) }}" class="btn btn-ghost">
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                Submit Proposal
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

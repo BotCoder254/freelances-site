@@ -1,0 +1,8 @@
+Flask
+pymongo
+python-dotenv
+flask-login
+bcrypt
+Pillow
+python-jose
+requests

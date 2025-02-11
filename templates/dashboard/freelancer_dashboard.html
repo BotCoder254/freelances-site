@@ -1,0 +1,148 @@
+{% extends "layouts/base_authenticated.html" %}
+
+{% block title %}Freelancer Dashboard - FreelanceHub{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Welcome Section -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold mb-2">Welcome, {{ current_user.first_name }}!</h1>
+        <p class="text-gray-600">Manage your proposals and active projects</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <a href="{{ url_for('projects.list_projects') }}" class="card bg-primary text-primary-content hover:bg-primary-focus transition-colors">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title">Find Projects</h2>
+                <p>Browse available projects and submit proposals</p>
+            </div>
+        </a>
+        <a href="{{ url_for('freelancers.edit_profile') }}" class="card bg-secondary text-secondary-content hover:bg-secondary-focus transition-colors">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title">Edit Profile</h2>
+                <p>Update your skills and portfolio</p>
+            </div>
+        </a>
+        <a href="{{ url_for('messages.inbox') }}" class="card bg-accent text-accent-content hover:bg-accent-focus transition-colors">
+            <div class="card-body items-center text-center">
+                <h2 class="card-title">Messages</h2>
+                <p>View and respond to client messages</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- Active Projects -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Active Projects</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for project in projects if project.hired_freelancer_id == current_user.id and project.status == 'in_progress' %}
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <h3 class="card-title">{{ project.title }}</h3>
+                    <p class="text-sm text-gray-600 mb-2">Started {{ project.hired_at|timeago }}</p>
+                    <p class="mb-4">{{ project.description[:150] }}...</p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% for skill in project.skills_required %}
+                        <span class="badge badge-primary">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="card-actions justify-between items-center">
+                        <div class="text-sm">
+                            <span class="font-bold">${{ project.budget_min }} - ${{ project.budget_max }}</span>
+                        </div>
+                        <a href="{{ url_for('projects.view_project', project_id=project._id) }}" class="btn btn-primary btn-sm">View Project</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-span-2">
+                <div class="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>You don't have any active projects. <a href="{{ url_for('projects.list_projects') }}" class="link">Browse projects</a> to get started!</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Submitted Proposals -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Submitted Proposals</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Bid Amount</th>
+                        <th>Delivery Time</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                        {% for proposal in project.proposals if proposal.freelancer_id == current_user.id %}
+                        <tr>
+                            <td>
+                                <div class="font-bold">{{ project.title }}</div>
+                                <div class="text-sm text-gray-600">${{ project.budget_min }} - ${{ project.budget_max }}</div>
+                            </td>
+                            <td>${{ proposal.bid_amount }}</td>
+                            <td>{{ proposal.delivery_time }} days</td>
+                            <td>
+                                <div class="badge badge-{{ 'success' if proposal.status == 'accepted' else 'warning' if proposal.status == 'pending' else 'error' }}">
+                                    {{ proposal.status }}
+                                </div>
+                            </td>
+                            <td>{{ proposal.created_at|timeago }}</td>
+                            <td>
+                                <a href="{{ url_for('projects.view_project', project_id=project._id) }}" 
+                                   class="btn btn-ghost btn-xs">View</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                No proposals submitted yet
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="flex justify-center mt-8">
+        <div class="join">
+            {% if pagination.page > 1 %}
+            <a href="{{ url_for('projects.freelancer_dashboard', page=pagination.page-1) }}" 
+               class="join-item btn">Previous</a>
+            {% endif %}
+            
+            {% for p in range(1, pagination.pages + 1) %}
+                {% if p == pagination.page %}
+                <button class="join-item btn btn-active" disabled>{{ p }}</button>
+                {% else %}
+                <a href="{{ url_for('projects.freelancer_dashboard', page=p) }}" 
+                   class="join-item btn">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.page < pagination.pages %}
+            <a href="{{ url_for('projects.freelancer_dashboard', page=pagination.page+1) }}" 
+               class="join-item btn">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

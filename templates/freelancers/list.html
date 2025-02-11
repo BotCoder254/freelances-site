@@ -1,0 +1,139 @@
+{% extends "layouts/base_authenticated.html" %}
+
+{% block title %}Browse Freelancers - FreelanceHub{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold">Browse Freelancers</h1>
+            <p class="text-gray-600">Find talented professionals for your projects</p>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <form method="GET" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Search -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Search</span>
+                        </label>
+                        <input type="text" name="search" value="{{ search }}" 
+                               class="input input-bordered" placeholder="Search by name or skills...">
+                    </div>
+
+                    <!-- Skills -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Skills</span>
+                        </label>
+                        <select name="skills" class="select select-bordered" multiple>
+                            <option value="">All Skills</option>
+                            {% for skill in ['Python', 'JavaScript', 'React', 'Node.js', 'UI/UX Design', 'Mobile Development'] %}
+                            <option value="{{ skill }}" 
+                                    {% if skill in selected_skills %}selected{% endif %}>
+                                {{ skill }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-4">
+                    <a href="{{ url_for('freelancers.list_freelancers') }}" class="btn btn-ghost">Reset</a>
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Freelancers Grid -->
+    {% if freelancers %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {% for freelancer in freelancers %}
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="avatar">
+                        <div class="w-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                            <img src="{{ freelancer.avatar_url or url_for('static', filename='images/default-avatar.png') }}" 
+                                 alt="{{ freelancer.get_full_name() }}">
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="card-title">{{ freelancer.get_full_name() }}</h2>
+                        <p class="text-sm text-gray-600">Member since {{ freelancer.created_at.strftime('%B %Y') }}</p>
+                    </div>
+                </div>
+
+                <p class="text-gray-600 line-clamp-3">{{ freelancer.bio or 'No bio provided.' }}</p>
+
+                <div class="flex flex-wrap gap-2 my-4">
+                    {% for skill in freelancer.skills[:3] %}
+                    <span class="badge badge-secondary badge-sm">{{ skill }}</span>
+                    {% endfor %}
+                    {% if freelancer.skills|length > 3 %}
+                    <span class="badge badge-ghost badge-sm">+{{ freelancer.skills|length - 3 }} more</span>
+                    {% endif %}
+                </div>
+
+                <div class="divider my-2"></div>
+
+                <div class="flex items-center justify-between text-sm text-gray-600">
+                    {% if freelancer.hourly_rate %}
+                    <div>${{ freelancer.hourly_rate }}/hr</div>
+                    {% else %}
+                    <div>Rate not specified</div>
+                    {% endif %}
+                </div>
+
+                <div class="card-actions justify-end mt-4">
+                    <a href="{{ url_for('freelancers.view_freelancer', freelancer_id=freelancer.id) }}" 
+                       class="btn btn-primary btn-block">View Profile</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if total > 10 %}
+    <div class="flex justify-center mb-8">
+        <div class="join">
+            {% set total_pages = (total / 10)|round(0, 'ceil')|int %}
+            {% if page > 1 %}
+            <a href="{{ url_for('freelancers.list_freelancers', page=page-1, search=search) }}" 
+               class="join-item btn">Previous</a>
+            {% endif %}
+            
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                <button class="join-item btn btn-active" disabled>{{ p }}</button>
+                {% else %}
+                <a href="{{ url_for('freelancers.list_freelancers', page=p, search=search) }}" 
+                   class="join-item btn">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page < total_pages %}
+            <a href="{{ url_for('freelancers.list_freelancers', page=page+1, search=search) }}" 
+               class="join-item btn">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body text-center py-16">
+            <h2 class="card-title text-2xl justify-center">No Freelancers Found</h2>
+            <p class="text-gray-600">Try adjusting your search filters or check back later.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

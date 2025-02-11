@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}FreelanceHub - Find Top Talent & Projects{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero min-h-[70vh] bg-base-200" style="background-image: url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80'); background-size: cover; background-position: center;">
+    <div class="hero-overlay bg-opacity-60"></div>
+    <div class="hero-content text-center text-neutral-content">
+        <div class="max-w-md">
+            <h1 class="mb-5 text-5xl font-bold">Empower Your Projects with Top Talent</h1>
+            <p class="mb-5">Find the best freelancers or discover projects that suit your expertise.</p>
+            <div class="flex gap-4 justify-center">
+                <a href="/signup?type=client" class="btn btn-primary">Hire Talent</a>
+                <a href="/signup?type=freelancer" class="btn btn-secondary">Find Work</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Core Features Section -->
+<div class="py-16 bg-base-100">
+    <div class="container mx-auto px-4">
+        <h2 class="text-4xl font-bold text-center mb-12">Why Choose FreelanceHub</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body items-center text-center">
+                    <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="card-title">Diverse Talent Pool</h3>
+                    <p>Access a global network of skilled professionals across various domains.</p>
+                </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body items-center text-center">
+                    <div class="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <h3 class="card-title">Secure Payments</h3>
+                    <p>Guaranteed secure transactions and milestone-based payments.</p>
+                </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body items-center text-center">
+                    <div class="w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
+                    </div>
+                    <h3 class="card-title">Verified Profiles</h3>
+                    <p>Every freelancer is thoroughly vetted to ensure quality work.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Testimonials Section -->
+<div class="py-16 bg-base-200">
+    <div class="container mx-auto px-4">
+        <h2 class="text-4xl font-bold text-center mb-12">What Our Users Say</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Testimonial 1 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="flex items-center mb-4">
+                        <div class="avatar">
+                            <div class="w-12 h-12 rounded-full">
+                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80" alt="User" />
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="font-bold">Sarah Johnson</h3>
+                            <div class="rating rating-sm">
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                            </div>
+                        </div>
+                    </div>
+                    <p>"Found amazing developers for my startup. The quality of work exceeded my expectations!"</p>
+                </div>
+            </div>
+
+            <!-- Testimonial 2 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="flex items-center mb-4">
+                        <div class="avatar">
+                            <div class="w-12 h-12 rounded-full">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80" alt="User" />
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="font-bold">Michael Chen</h3>
+                            <div class="rating rating-sm">
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                            </div>
+                        </div>
+                    </div>
+                    <p>"As a freelancer, I've found consistent work and great clients through this platform."</p>
+                </div>
+            </div>
+
+            <!-- Testimonial 3 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body">
+                    <div class="flex items-center mb-4">
+                        <div class="avatar">
+                            <div class="w-12 h-12 rounded-full">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80" alt="User" />
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="font-bold">Emma Davis</h3>
+                            <div class="rating rating-sm">
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" checked />
+                                <input type="radio" class="mask mask-star-2 bg-orange-400" />
+                            </div>
+                        </div>
+                    </div>
+                    <p>"The platform's secure payment system gives me peace of mind for every project."</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works Section -->
+<div class="py-16 bg-base-100">
+    <div class="container mx-auto px-4">
+        <h2 class="text-4xl font-bold text-center mb-12">How It Works</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Step 1 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body items-center text-center">
+                    <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">1</div>
+                    <h3 class="card-title">Post or Find</h3>
+                    <p>Post your project or search for relevant opportunities</p>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body items-center text-center">
+                    <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">2</div>
+                    <h3 class="card-title">Connect</h3>
+                    <p>Connect with the right freelancer or client</p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body items-center text-center">
+                    <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xl mb-4">3</div>
+                    <h3 class="card-title">Complete</h3>
+                    <p>Complete the project and process secure payment</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
